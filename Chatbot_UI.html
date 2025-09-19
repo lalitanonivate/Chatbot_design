@@ -72,7 +72,7 @@ body { margin: 0; font-family: var(--font); color: var(--ink) }
 #widget.widget{
   position: fixed; inset: 0; width: 100vw; height: 100vh; background: var(--panel);
   border-radius: 0; box-shadow: none; border: none; display: none; flex-direction: column;
-  overflow: hidden; z-index: 999999;
+  overflow: hidden; z-index: 999999999;
 }
 
 /* Top bar */
@@ -80,7 +80,7 @@ body { margin: 0; font-family: var(--font); color: var(--ink) }
   display: flex; align-items: center; justify-content: space-between; gap: 18px;
   padding: 10px 14px 0; border-bottom: 1px solid var(--line); background: #F7F4F2; flex: 0 0 auto;
 }
-#widget .logo{ width: 105px; height: 50px; background: var(--brand-logo) center/cover no-repeat; flex: 0 0 auto; margin-bottom: 10px; }
+#widget .logo{ width: 105px; height: 50px; flex: 0 0 auto; margin-bottom: 10px; }
 #widget .tabs{ display: flex; gap: 10px; align-items: center; overflow: auto; }
 #widget .tab{
   display: flex; flex-direction: row; gap: 8px; align-items: center; font-family: "Inclusive Sans", sans-serif;
@@ -102,7 +102,7 @@ body { margin: 0; font-family: var(--font); color: var(--ink) }
 #widget .chat-area{ padding: 6px 16px 14px; overflow: auto; flex: 1; background: var(--bg-canvas); }
 #widget .msg-row{ display: flex; align-items: flex-start; gap: 10px; margin: 12px 0; }
 #widget .avatar{
-  width: 70px; height: 70px; border-radius: 50%; background: url(./img/avatar.png) center/cover no-repeat;
+  width: 70px; height: 70px; border-radius: 50%; background: url(https://cdn.prod.website-files.com/68beb349c6de55fecbd68bcc/68cd45fb639a53efc71bdee1_avatar_q.png) center/cover no-repeat;
   border: 1px solid var(--line); flex: 0 0 auto;
 }
 #widget .who{ font-size: 22px; color: #2B2B2B; margin: 0 0 4px 0; font-weight: 500; }
@@ -204,7 +204,17 @@ body { margin: 0; font-family: var(--font); color: var(--ink) }
     const widgetHTML = `
 <section class="widget" id="widget" role="dialog" aria-modal="true" aria-label="Chat and contact">
   <div class="topbar">
-    <div class="logo" aria-hidden="true"></div>
+    <div class="logo" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="105" height="51" viewBox="0 0 105 51" fill="none">
+  <path d="M8.8578 50C2.8971 50 0 46.2371 0 41.2421C0 36.2471 2.8971 32.6 8.8578 32.6H11.3542L11.4874 32.4668V26.8332L11.6206 26.7H17.0152L17.1484 26.8332V49.8668L17.0152 50H8.8578ZM8.8578 44.4056C10.4562 44.4056 11.8548 43.2734 11.8548 41.2754C11.8548 39.2774 10.4562 38.1452 8.8578 38.1452C7.2594 38.1452 5.8608 39.2774 5.8608 41.2754C5.8608 43.2734 7.2594 44.4056 8.8578 44.4056Z" fill="#2B2B2B"></path>
+  <path d="M27.0184 50.4995C21.8236 50.4995 18.5602 46.67 18.5602 41.2754C18.5602 35.8808 21.6238 32.0513 26.8186 32.0513C31.3474 32.0513 34.8106 34.8152 34.8106 40.5095V42.9071L34.6774 43.0403H25.7863C25.0537 43.0403 24.5875 43.4399 24.5875 44.1725C24.5875 45.1382 25.3867 45.9041 26.8852 45.9041C28.0174 45.9041 28.6834 45.4712 28.8166 44.8385L28.9498 44.7053H34.3444L34.4776 44.8385C34.1113 48.335 30.9811 50.4995 27.0184 50.4995ZM27.9175 39.7769C28.6501 39.7769 29.0497 39.3107 29.0497 38.5781C29.0497 37.5125 28.1506 36.7133 26.8519 36.7133C25.5532 36.7133 24.6541 37.5125 24.6541 38.5781C24.6541 39.3107 25.0537 39.7769 25.7863 39.7769H27.9175Z" fill="#2B2B2B"></path>
+  <path d="M38.3323 50L38.1991 49.8668V39.011C38.1991 37.9454 37.5997 37.346 36.5341 37.346H35.2021L35.0689 37.2128V32.7332L35.2021 32.6H38.0659L38.1991 32.4668L38.2018 26.8332L38.335 26.7H47.3593L47.4925 26.8332L47.4898 30.4862L47.3566 30.6194H45.5251C44.3929 30.6194 43.8601 31.2014 43.8601 32.3336V32.4668L43.9933 32.6H47.3566L47.4898 32.7332V37.2128L47.3566 37.346H45.5251C44.4595 37.346 43.8601 37.9454 43.8601 39.011V49.8668L43.7269 50H38.3323Z" fill="#2B2B2B"></path>
+  <path d="M56.2413 50C50.2806 50 47.3835 46.3196 47.3835 41.3246C47.3835 36.3296 50.2806 32.6 56.2413 32.6H64.7661L64.8993 32.7332V49.8668L64.7661 50H56.2413ZM56.2413 44.4056C57.8397 44.4056 59.2383 43.2734 59.2383 41.2754C59.2383 39.2774 57.8397 38.1452 56.2413 38.1452C54.6429 38.1452 53.2443 39.2774 53.2443 41.2754C53.2443 43.2734 54.6429 44.4056 56.2413 44.4056Z" fill="#2B2B2B"></path>
+  <path d="M83.3179 32.6L83.4511 32.7332V49.8668L83.3179 50H67.5337L67.4005 49.8668V32.7332L67.5337 32.6H72.9283L73.0615 32.7332V42.4076C73.0615 43.9061 73.894 44.7386 75.3925 44.7386H75.4591C76.9576 44.7386 77.7901 43.9061 77.7901 42.4076V32.7332L77.9233 32.6H83.3179Z" fill="#2B2B2B"></path>
+  <path d="M86.0837 50L85.9505 49.8668V26.8332L86.0837 26.7H91.4783L91.6115 26.8332V43.0736C91.6115 44.1392 92.2109 44.7386 93.2765 44.7386H93.3764L93.5096 44.8718V49.8668L93.3764 50H86.0837Z" fill="#2B2B2B"></path>
+  <path d="M95.9348 50L95.8016 49.8668V39.0602C95.8016 37.9946 95.2021 37.3952 94.1366 37.3952H92.8046L92.6713 37.262V32.7332L92.8046 32.6H95.6684L95.8016 32.4668V27.8222L95.9348 27.689H101.329L101.463 27.8222V32.4668L101.596 32.6H104.867L105 32.7332V37.262L104.867 37.3952H103.035C101.97 37.3952 101.463 37.9946 101.463 39.0602V43.4732C101.463 44.5388 101.97 45.005 103.035 45.005H104.867L105 45.1382V49.8668L104.867 50H95.9348Z" fill="#2B2B2B"></path>
+  <path d="M1.7332 23.3L1.6 23.1668V0.1332L1.7332 0L7.12578 0L7.25898 0.1332V5.7668L7.39218 5.9H9.92298C15.8837 5.9 18.7808 9.5963 18.7808 14.5913C18.7808 19.5863 15.8837 23.3 9.92298 23.3H1.7332ZM9.92298 17.7056C11.5214 17.7056 12.92 16.5734 12.92 14.5754C12.92 12.5774 11.5214 11.4452 9.92298 11.4452C8.32458 11.4452 6.92598 12.5774 6.92598 14.5754C6.92598 16.5734 8.32458 17.7056 9.92298 17.7056Z" fill="#2B2B2B"></path>
+  <path d="M19.384 30.6L19.2508 30.4668V26.8332L19.384 26.7H23.5132C24.7453 26.7 25.2448 26.1305 25.4446 25.2314L25.5445 24.8318C25.7776 23.8328 25.2115 23.3 24.2125 23.3H23.2468L23.1136 23.1668L18.2518 6.0332L18.385 5.9H24.1126L26.3437 15.7901C26.5102 16.4894 26.8765 16.8557 27.4759 16.8557C28.0753 16.8557 28.4416 16.4894 28.6081 15.7901L30.8392 5.9H36.5668L36.7 6.0332L29.7096 30.4668L29.5764 30.6H19.384Z" fill="currentColor"></path>
+</svg></div>
     <div class="tabs">
       <button class="tab" data-page="chat" aria-selected="true">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none">
