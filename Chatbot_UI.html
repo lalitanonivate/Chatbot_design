@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat & Contact (Launcher → Fullscreen + Book tab)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+</head>
+
+<body>
+
+ <script>
+(() => {
+  // --- 0) Helpers -----------------------------------------------------------
+  const once = (id, node) => {
+    if (document.getElementById(id)) return;
+    node.id = id;
+    document.head.appendChild(node);
+  };
+
+  const run = () => {
+    // --- 1) Fonts -----------------------------------------------------------
+    const pre1 = document.createElement("link");
+    pre1.rel = "preconnect"; pre1.href = "https://fonts.googleapis.com";
+    const pre2 = document.createElement("link");
+    pre2.rel = "preconnect"; pre2.href = "https://fonts.gstatic.com"; pre2.crossOrigin = "anonymous";
+    const gfont1 = document.createElement("link");
+    gfont1.rel = "stylesheet";
+    gfont1.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap";
+    const gfont2 = document.createElement("link");
+    gfont2.rel = "stylesheet";
+    gfont2.href = "https://fonts.googleapis.com/css2?family=Inclusive+Sans:ital,wght@0,300..700;1,300..700&display=swap";
+    once("bdw-pre-gfonts-1", pre1);
+    once("bdw-pre-gfonts-2", pre2);
+    once("bdw-font-poppins", gfont1);
+    once("bdw-font-inclusive", gfont2);
+
+    // --- 2) Styles ----------------------------------------------------------
+    const css = `
+:root {
+  --font: "Inclusive Sans", sans-serif;
+  --bg-canvas: #F7F4F2;
+  --panel: #F7F4F2;
+  --ink: #161513;
+  --muted: #6E6A65;
+  --line: rgba(43, 43, 43, 0.15);
+  --bot: #C7E5E0;
+  --user: #CDE8C6;
+  --typing: #BFE5DE;
+  --send: #1E1E1E;
+  --send-ink: #fff;
+  --chip: #F6F5F3;
+  --chip-on: #111;
+  --chip-on-bg: #EDECEA;
+  --brand-logo: url('./img/logo.png');
+}
+html, body { height: 100% }
+body { margin: 0; font-family: var(--font); color: var(--ink) }
+
+/* Floating launcher */
+#openWidget.launcher{
+  position: fixed; right: 20px; bottom: 20px; cursor: pointer; z-index: 1000000;
+  display: flex; flex-direction: row; min-height: 56px; padding: 16px;
+  justify-content: center; align-items: center; gap: 8px; transition: transform .15s ease;
+  background: #F7F4F2; border: 1px solid rgba(43, 43, 43, 0.15); color: #2B2B2B;
+  font-size: 18px; font-weight: 500; line-height: 130%;
+}
+#openWidget.launcher:hover { transform: scale(1.05) }
+
+/* FULLSCREEN widget */
+#widget.widget{
+  position: fixed; inset: 0; width: 100vw; height: 100vh; background: var(--panel);
+  border-radius: 0; box-shadow: none; border: none; display: none; flex-direction: column;
+  overflow: hidden; z-index: 999999;
+}
+
+/* Top bar */
+#widget .topbar{
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  padding: 10px 14px 0; border-bottom: 1px solid var(--line); background: #F7F4F2; flex: 0 0 auto;
+}
+#widget .logo{ width: 105px; height: 50px; background: var(--brand-logo) center/cover no-repeat; flex: 0 0 auto; margin-bottom: 10px; }
+#widget .tabs{ display: flex; gap: 10px; align-items: center; overflow: auto; }
+#widget .tab{
+  display: flex; flex-direction: row; gap: 8px; align-items: center; font-family: "Inclusive Sans", sans-serif;
+  appearance: none; border: 0; background: transparent; padding: 16px; border-radius: 0; color: #2B2B2B;
+  font-size: 18px; font-weight: 500; line-height: 130%; cursor: pointer; white-space: nowrap;
+}
+#widget .tab[aria-selected="true"]{ border-bottom: 1px solid #2B2B2B; }
+#widget .close{
+  display: flex; min-height: 56px; padding: 16px; justify-content: center; align-items: center;
+  border: none; background-color: #2B2B2B; cursor: pointer;
+}
+
+/* Pages */
+#widget .page{ display: none; min-height: 0; }
+#widget .page.active{ display: flex; flex-direction: column; flex: 1 1 auto; max-width: 868px; margin: 0 auto; width: 100%; }
+
+/* Chat page */
+#widget .chat-header{ padding: 35px 20px 8px; font-weight: 700; font-size: 32px; background: #F7F4F2; }
+#widget .chat-area{ padding: 6px 16px 14px; overflow: auto; flex: 1; background: var(--bg-canvas); }
+#widget .msg-row{ display: flex; align-items: flex-start; gap: 10px; margin: 12px 0; }
+#widget .avatar{
+  width: 70px; height: 70px; border-radius: 50%; background: url(./img/avatar.png) center/cover no-repeat;
+  border: 1px solid var(--line); flex: 0 0 auto;
+}
+#widget .who{ font-size: 22px; color: #2B2B2B; margin: 0 0 4px 0; font-weight: 500; }
+#widget .bubble{ padding: 24px; border-radius: 12px; font-size: 22px; line-height: 1.45; max-width: 100%; }
+#widget .bot .bubble{ background: var(--bot); color: #0f3732; }
+#widget .user{ justify-content: flex-end; }
+#widget .user .bubble{ background: #B6D6A5; color: #000000; }
+#widget .user .avatar{ display: none; }
+
+/* For typing layout: avatar + who in SAME row */
+#widget .meta{ display: inline-flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+#widget .msg-row.bot{ align-items: flex-start; }
+
+/* Typing tile */
+#widget .typing{
+  width: 48px; height: 30px; border-radius: 8px; background: var(--typing);
+  display: grid; place-items: center; box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+#widget .dots{ display: inline-flex; gap: 4px; }
+#widget .dots i{ width: 5px; height: 5px; border-radius: 50%; background: #2a6b61; opacity: .5; animation: b 1.2s infinite; display: block; }
+#widget .dots i:nth-child(2){ animation-delay: .15s }
+#widget .dots i:nth-child(3){ animation-delay: .3s }
+@keyframes b{ 0%,80%,100%{ transform: translateY(0); opacity: .45 } 40%{ transform: translateY(-3px); opacity: .9 } }
+
+/* Composer */
+#widget .composer{
+  display: flex; gap: 10px; align-items: center; border: 1px solid rgba(43, 43, 43, 0.15); background: #F7F4F2;
+  padding: 20px; border-radius: 16px; border-bottom-right-radius: 0; margin-bottom: 30px;
+}
+#widget .input{
+  font-family: "Inclusive Sans", sans-serif; flex: 1; border: none; background: #F7F4F2; border-radius: 10px;
+  padding: 12px 12px; outline: none; font-size: 22px; color: rgba(43,43,43,0.50);
+}
+#widget .send{ padding: 16px 24px; border: 1px solid #2B2B2B; background: #2B2B2B; color: var(--send-ink); display: grid; place-items: center; cursor: pointer; }
+#widget .send svg{ width: 18px; height: 18px; fill: #fff }
+
+/* Contact page */
+#widget .contact-wrap{ padding: 18px 16px; overflow: auto; background: var(--bg-canvas); flex: 1; }
+#widget .h1{ font-weight: 700; font-size: 22px; text-align: center; margin: 4px 0 6px; }
+#widget .sub{ text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+#widget .field{ margin: 10px 0 }
+#widget .field label{ display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px }
+#widget .field input, #widget .field textarea{
+  width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; background: #fff; font: 400 14px/1.2 var(--font);
+}
+
+/* Chips (single-select with CSS checkmark) */
+#widget .chips{ display: flex; gap: 10px; flex-wrap: wrap; }
+#widget .chip{
+  border: 1px solid var(--line); background: var(--chip); padding: 9px 12px; font: 500 13px/1 var(--font);
+  border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  position: relative; padding-left: 36px;
+}
+#widget .chip svg{ display: none !important; }
+#widget .chip::before{
+  content: ""; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; border: 1px solid var(--line); border-radius: 4px; background: #fff; opacity: 0; transition: all .15s ease;
+}
+#widget .chip::after{
+  content: ""; position: absolute; left: 14px; top: 50%;
+  width: 8px; height: 4px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: translateY(-55%) rotate(-45deg);
+  opacity: 0; transition: opacity .15s ease;
+}
+#widget .chip[aria-pressed="true"]{ background: var(--chip-on-bg); color: var(--chip-on); }
+#widget .chip[aria-pressed="true"]::before{ opacity: 1; background: #111; border-color: #111; }
+#widget .chip[aria-pressed="true"]::after{ opacity: 1; }
+
+#widget .cta{
+  margin-top: 14px; width: 100%; border: 1px solid var(--line); background: #111; color: #fff; padding: 12px 14px; border-radius: 6px;
+  font: 600 14px/1 var(--font); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+#widget .cta svg{ width: 16px; height: 16px; fill: #fff }
+
+#widget .escape-close{
+  display: flex; justify-content: center; align-items: center; gap: 16px; color: #2B2B2B; font-weight: 800; line-height: 130%;
+  letter-spacing: 1.82px; text-transform: uppercase; margin-bottom: 10px;
+}
+
+@media (max-width:640px){ #widget .composer{ position: sticky; bottom: 0 } }
+`;
+    const style = document.createElement("style");
+    style.textContent = css;
+    once("bdw-style", style);
+
+    // --- 3) DOM: Launcher + Widget -----------------------------------------
+    const wrap = document.createElement("div");
+    wrap.id = "bdw-root";
+    wrap.style.all = "initial"; // isolate inheritable glitches a bit
+
+    const launcherHTML = `
+<button class="launcher" id="openWidget" aria-label="Open chat">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none">
+    <path d="M4.69 11.78 7.47 11.316c1.475-.246 2.631-1.402 2.877-2.877l.464-2.784h1.75l.464 2.784c.246 1.475 1.402 2.631 2.877 2.877L18.69 11.78v1.75l-2.784.464a3.5 3.5 0 0 0-2.877 2.877l-.464 2.784h-1.75l-.464-2.784a3.5 3.5 0 0 0-2.877-2.877L4.69 13.53v-1.75Z" fill="#2B2B2B" />
+    <path d="M18.85 4.452c.125.88.817 1.572 1.697 1.698L21 6.214v.571l-.453.066c-.88.125-1.571.817-1.697 1.697L18.786 9h-.572l-.064-.452c-.126-.88-.818-1.571-1.698-1.697L16 6.786v-.572l.452-.064c.88-.126 1.572-.818 1.698-1.698L18.786 4h.571l-.507.452Z" fill="#2B2B2B" />
+  </svg>
+  <span>Ask us anything</span>
+</button>`;
+
+    const widgetHTML = `
+<section class="widget" id="widget" role="dialog" aria-modal="true" aria-label="Chat and contact">
+  <div class="topbar">
+    <div class="logo" aria-hidden="true"></div>
+    <div class="tabs">
+      <button class="tab" data-page="chat" aria-selected="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none">
+          <path d="M8 10.5L9.59 10.235c.843-.141 1.504-.802 1.644-1.645L11.5 7h1l.265 1.59c.141.843.802 1.504 1.645 1.645L16 10.5v1l-1.59.265c-.843.14-1.504.801-1.645 1.644L12.5 15h-1l-.265-1.59c-.14-.843-.801-1.504-1.644-1.645L8 11.5v-1Z" fill="#2B2B2B"/>
+          <path d="M15 6H6a1 1 0 0 0-1 1v10c0 .412.47.647.8.4L7.667 16H18a1 1 0 0 0 1-1v-5h2v8H8.333L3 22V4h12v2Z" fill="#2B2B2B"/>
+          <path d="M21 6.142v.714C19.677 7.047 19.038 7.737 18.856 9h-.713c-.19-1.323-.88-1.962-2.143-2.143v-.714c1.323-.187 1.961-.879 2.143-2.141h.713c.19 1.322.879 1.964 2.143 2.142Z" fill="#2B2B2B"/>
+        </svg> AI Assist
+      </button>
+      <button class="tab" data-page="contact" aria-selected="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M22 21H2V3h20v18ZM12 13 5.555 8.703C4.89 8.26 4 8.736 4 9.535V17a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9.535c0-.798-.89-1.274-1.555-.832L12 13Zm0-2 7.858-5.402A.327.327 0 0 0 20 5.328C20 5.147 19.853 5 19.672 5H4.328C4.147 5 4 5.147 4 5.328c0 .108.053.209.142.27L12 11Z" fill="#2B2B2B"/>
+        </svg> Get In Touch
+      </button>
+      <button class="tab" data-page="book" aria-selected="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none">
+          <path d="M11.018 14v-2h2v2h-2Zm-4 0v-2h2v2h-2Zm8 0v-2h2v2h-2Zm-4 4v-2h2v2h-2Zm-4 0v-2h2v2h-2Zm8 0v-2h2v2h-2ZM3.018 22V4h2c.553 0 1-.448 1-1V2h2v1c0 .552.448 1 1 1h6c.553 0 1-.448 1-1V2h2v1c0 .552.448 1 1 1h2V22H3.018Zm2-3c0 .552.448 1 1 1H18.018c.553 0 1-.448 1-1V11a1 1 0 0 0-1-1H6.018a1 1 0 0 0-1 1v8Zm0-12c0 .552.448 1 1 1H18.018c.553 0 1-.448 1-1 0-.552-.447-1-1-1H6.018c-.552 0-1 .448-1 1Z" fill="#2B2B2B"/>
+        </svg> Book A Call
+      </button>
+    </div>
+    <span class="escape-close">ESC
+      <button class="close" id="closeWidget" aria-label="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"><path d="M6.4 19 5 17.6l4.186-4.186a2 2 0 0 0 0-2.828L5 6.4 6.4 5l4.186 4.186a2 2 0 0 0 2.828 0L17.6 5 19 6.4l-4.186 4.186a2 2 0 0 0 0 2.828L19 17.6 17.6 19l-4.186-4.186a2 2 0 0 0-2.828 0L6.4 19Z" fill="#F7F4F2"/></svg>
+      </button>
+    </span>
+  </div>
+
+  <!-- CHAT PAGE -->
+  <div class="page active" id="page-chat">
+    <div class="chat-header">Ask us anything</div>
+    <div class="chat-area" id="messages"></div>
+    <div class="composer">
+      <input class="input" id="input" type="text" placeholder="Type a reply..." />
+      <button class="send" id="send" aria-label="Send">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none">
+          <path d="M13.135 19.178 9.246 10.753 0.822 6.865 19.614.386 13.135 19.178ZM11.2 10.213l1.457 3.157c.075.163.311.151.37-.019l2.189-6.349c.103-.301-.271-.536-.496-.31L11.2 10.213ZM6.648 6.972c-.17.058-.181.295-.018.371l3.157 1.456 3.521-3.52c.225-.225-.009-.6-.309-.496L6.648 6.972Z" fill="#F7F4F2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTACT PAGE -->
+  <div class="page" id="page-contact">
+    <div class="contact-wrap">
+      <div class="h1">Get in touch</div>
+     
+
+    
+    </div>
+  </div>
+
+  <!-- BOOK A CALL PAGE -->
+  <div class="page" id="page-book">
+    <div class="book-wrap"><!-- empty per your last HTML --></div>
+  </div>
+</section>
+`;
+
+    wrap.innerHTML = launcherHTML + widgetHTML;
+    document.body.appendChild(wrap);
+
+    // --- 4) Behavior --------------------------------------------------------
+    // Config (kept for future use)
+    const BOOK_A_CALL_URL = "https://cal.com/your-handle/intro-call";
+
+    // Elements
+    const openBtn = document.getElementById("openWidget");
+    const widget  = document.getElementById("widget");
+    const closeBtn= document.getElementById("closeWidget");
+    const tabs    = widget.querySelectorAll(".tab");
+    const pages   = {
+      chat: document.getElementById("page-chat"),
+      contact: document.getElementById("page-contact"),
+      book: document.getElementById("page-book")
+    };
+
+    // Open from floating button → fullscreen
+    openBtn.addEventListener("click", () => {
+      widget.style.display = "flex";
+      document.body.style.overflow = "hidden";
+      if (!widget.querySelector(".chat-area .msg-row")) {
+        setTimeout(() => addMsg("Hi there! My name is Botty 👋. How can I help today?", "bot"), 200);
+      }
+    });
+
+    // Close (button + ESC)
+    const closeFullscreen = () => {
+      widget.style.display = "none";
+      document.body.style.overflow = "";
+    };
+    closeBtn.addEventListener("click", closeFullscreen);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeFullscreen(); });
+
+    // Tabs
+    tabs.forEach((t) => {
+      t.addEventListener("click", () => {
+        const page = t.dataset.page;
+        if (!page) return;
+        tabs.forEach((x) => x.setAttribute("aria-selected", String(x === t)));
+        Object.values(pages).forEach((p) => p.classList.remove("active"));
+        pages[page].classList.add("active");
+      });
+    });
+
+    // Chat mechanics
+    const messages = document.getElementById("messages");
+    const input    = document.getElementById("input");
+    const send     = document.getElementById("send");
+
+    function addMsg(text, who = "user") {
+      const row = document.createElement("div");
+      row.className = "msg-row " + (who === "user" ? "user" : "bot");
+
+      if (who === "bot") {
+        // Bot bubble (avatar on the left, name above bubble) – unchanged
+        const av = document.createElement("div"); av.className = "avatar";
+        row.appendChild(av);
+        const col = document.createElement("div");
+        const name = document.createElement("div"); name.className = "who"; name.textContent = "Botty";
+        const bubble = document.createElement("div"); bubble.className = "bubble"; bubble.textContent = text;
+        col.appendChild(name); col.appendChild(bubble); row.appendChild(col);
+      } else {
+        const bubble = document.createElement("div"); bubble.className = "bubble"; bubble.textContent = text;
+        row.appendChild(bubble);
+      }
+
+      messages.appendChild(row);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    // Typing indicator: avatar + who inside the SAME div (meta), as requested
+    function addTyping() {
+      const row = document.createElement("div");
+      row.className = "msg-row bot";
+      row.id = "typing";
+
+      const col = document.createElement("div");
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const av = document.createElement("div"); av.className = "avatar";
+      const name = document.createElement("div"); name.className = "who"; name.textContent = "Botty";
+      meta.appendChild(av); meta.appendChild(name);
+
+      const tile = document.createElement("div");
+      tile.className = "typing";
+      tile.innerHTML = '<span class="dots"><i></i><i></i><i></i></span>';
+
+      col.appendChild(meta);
+      col.appendChild(tile);
+
+      row.appendChild(col);
+      messages.appendChild(row);
+      messages.scrollTop = messages.scrollHeight;
+    }
+    function removeTyping() {
+      const t = document.getElementById("typing");
+      if (t) t.remove();
+    }
+
+    function handleSend() {
+      const text = (input.value || "").trim();
+      if (!text) return;
+      addMsg(text, "user");
+      input.value = "";
+      addTyping();
+      setTimeout(() => { removeTyping(); addMsg("Hi there! My name is Botty 👋. How can I help today?", "bot"); }, 800);
+    }
+    send.addEventListener("click", handleSend);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") handleSend(); });
+
+    // Chips: both groups single-select with tick
+    function toggleChips(containerId, multi = false) {
+      const wrap = document.getElementById(containerId);
+      if (!wrap) return;
+      wrap.addEventListener("click", (e) => {
+        const btn = e.target.closest(".chip");
+        if (!btn || !wrap.contains(btn)) return;
+        if (!multi) {
+          wrap.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", "false"));
+          btn.setAttribute("aria-pressed", "true");
+        } else {
+          const pressed = btn.getAttribute("aria-pressed") === "true";
+          btn.setAttribute("aria-pressed", String(!pressed));
+        }
+      });
+    }
+    toggleChips("topics", false);
+    toggleChips("budget", false);
+
+    // Contact submit
+    const sendContact = document.getElementById("sendContact");
+    if (sendContact) {
+      sendContact.addEventListener("click", () => {
+        const name    = (document.getElementById("name").value || "").trim();
+        const email   = (document.getElementById("email").value || "").trim();
+        const project = (document.getElementById("project").value || "").trim();
+        const topicBtn  = document.querySelector("#topics .chip[aria-pressed='true']");
+        const budgetBtn = document.querySelector("#budget .chip[aria-pressed='true']");
+        const topic  = topicBtn ? topicBtn.dataset.value : "";
+        const budget = budgetBtn ? budgetBtn.dataset.value : "";
+
+        if (!name || !email) { alert("Please add your name and email."); return; }
+
+        // Replace with your POST endpoint as needed
+        console.log("Contact form:", { name, email, topic, project, budget });
+
+        // Confirmation in chat
+        widget.querySelector('.tab[data-page="chat"]').click();
+        addMsg(`Hi! I'm ${name}. ${project ? "About: " + project : ""}`, "user");
+        addTyping();
+        setTimeout(() => { removeTyping(); addMsg("Thanks for reaching out—our team will email you shortly. ✅", "bot"); }, 900);
+      });
+    }
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", run, { once: true });
+  } else {
+    run();
+  }
+})();
+</script>
+
+</body>
+
+</html>
